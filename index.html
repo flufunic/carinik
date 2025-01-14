@@ -1,144 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cari Data Berdasarkan NIK</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 50px auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-
-        form {
-            margin-top: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        label {
-            font-size: 16px;
-            font-weight: bold;
-        }
-
-        input[type="text"], button {
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        .error {
-            color: red;
-            margin-top: 10px;
-        }
-
-        .result {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 5px;
-            background: #e9f7ef;
-            color: #2e7d32;
-        }
-
-        .result p {
-            margin: 0;
-            font-size: 16px;
-        }
-
-        .no-data {
-            text-align: center;
-            margin-top: 20px;
-            color: #666;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search by NIK</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      text-align: center;
+    }
+    input {
+      padding: 10px;
+      width: 300px;
+      margin: 10px 0;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    table {
+      margin: 20px auto;
+      border-collapse: collapse;
+      width: 80%;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Cari Data Berdasarkan NIK</h1>
-        <form id="searchForm">
-            <label for="nik">Masukkan NIK:</label>
-            <input type="text" id="nik" placeholder="Contoh: 1234567890123456" required>
-            <button type="submit">Cari</button>
-        </form>
-        <div class="error" id="errorMessage"></div>
-        <div class="result" id="resultContainer" style="display: none;"></div>
-        <p class="no-data" id="noDataMessage" style="display: none;">Data tidak ditemukan.</p>
-    </div>
+  <h1>Search Data by NIK</h1>
+  <input type="text" id="nikInput" placeholder="Enter NIK">
+  <button onclick="searchData()">Search</button>
+  
+  <table id="resultTable" style="display: none;">
+    <thead>
+      <tr>
+        <th>NIK</th>
+        <th>Nama</th>
+        <th>Sembako</th>
+        <th>PKH</th>
+        <th>PBI</th>
+        <th>RST</th>
+        <th>BLT El Nino</th>
+        <th>BLT BBM</th>
+        <th>Sembako Adaptif</th>
+        <th>BLT Migor</th>
+        <th>Yatim Piatu</th>
+        <th>Permakanan</th>
+        <th>Pena</th>
+        <th>BPNT PPKM</th>
+        <th>BST</th>
+        <th>Atensi</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-    <script>
-        // Data Excel yang disimpan langsung dalam format JSON
-        const data = [
-            { NIK: "1234567890123456", Nama: "John Doe", Alamat: "Jakarta" },
-            { NIK: "9876543210987654", Nama: "Jane Smith", Alamat: "Bandung" },
-            { NIK: "1122334455667788", Nama: "Alice Wong", Alamat: "Surabaya" }
-        ];
+  <script>
+    let excelData = [];
 
-        // Handle pencarian data
-        document.getElementById('searchForm').addEventListener('submit', function (e) {
-            e.preventDefault();
+    // Load the Excel file
+    fetch('assets/data.xlsx')
+      .then(response => response.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0]; // Read the first sheet
+          const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+          excelData = sheetData; // Store the data in a variable
+        };
+        reader.readAsArrayBuffer(blob);
+      });
 
-            const nik = document.getElementById('nik').value.trim();
-            const errorMessage = document.getElementById('errorMessage');
-            const resultContainer = document.getElementById('resultContainer');
-            const noDataMessage = document.getElementById('noDataMessage');
+    function searchData() {
+      const nik = document.getElementById('nikInput').value;
+      const result = excelData.find(row => String(row.NIK) === nik);
 
-            // Reset pesan error dan hasil
-            errorMessage.textContent = '';
-            resultContainer.style.display = 'none';
-            resultContainer.innerHTML = '';
-            noDataMessage.style.display = 'none';
+      const table = document.getElementById('resultTable');
+      const tbody = table.querySelector('tbody');
+      tbody.innerHTML = ''; // Clear previous results
 
-            // Validasi input NIK
-            if (!nik) {
-                errorMessage.textContent = 'Harap masukkan NIK.';
-                return;
-            }
-
-            // Cari data berdasarkan NIK
-            const result = data.find(row => row.NIK === nik);
-
-            if (result) {
-                // Tampilkan hasil
-                resultContainer.style.display = 'block';
-                resultContainer.innerHTML = `
-                    <p><strong>Nama:</strong> ${result.Nama}</p>
-                    <p><strong>Alamat:</strong> ${result.Alamat}</p>
-                `;
-            } else {
-                // Tampilkan pesan tidak ditemukan
-                noDataMessage.style.display = 'block';
-            }
+      if (result) {
+        table.style.display = 'table';
+        const row = document.createElement('tr');
+        Object.values(result).forEach(value => {
+          const cell = document.createElement('td');
+          cell.textContent = value || 'TIDAK';
+          row.appendChild(cell);
         });
-    </script>
+        tbody.appendChild(row);
+      } else {
+        table.style.display = 'none';
+        alert('NIK not found!');
+      }
+    }
+  </script>
 </body>
 </html>
